@@ -73,6 +73,18 @@ FLAG_PATTERNS = {
 ANON_RE = re.compile(r"anonymous|stealth|hidden business|unnamed|undisclosed", re.I)
 
 
+def has_traction(item):
+    """Quality gate for the direction-finding pools: a real subscription base,
+    early subscribers, or meaningful one-time volume. Filters out stagnant
+    no-MRR side projects that slip in through thin categories."""
+    rev = item.get("revenue") or {}
+    return (
+        (rev.get("mrr") or 0) >= 50
+        or (item.get("activeSubscriptions") or 0) > 0
+        or (rev.get("last30Days") or 0) >= 1000
+    )
+
+
 def get(params, key):
     qs = urllib.parse.urlencode(params)
     req = urllib.request.Request(f"{API}?{qs}", headers={"Authorization": f"Bearer {key}"})
@@ -328,6 +340,13 @@ def main():
         focus.extend(fetch_section(f"focus:{cat}", {**FOCUS_PARAMS, "category": cat}, FOCUS_PAGES, key))
         time.sleep(REQUEST_GAP_S)
     sections["focus"] = list({it["slug"]: it for it in focus}.values())
+
+    # traction gate applies to the direction-finding pools only; deal flow stays raw
+    for name in ("potential", "focus"):
+        before = len(sections[name])
+        sections[name] = [it for it in sections[name] if has_traction(it)]
+        if before != len(sections[name]):
+            print(f"{name}: traction gate dropped {before - len(sections[name])}", file=sys.stderr)
 
     merged = {}
     for items in sections.values():
