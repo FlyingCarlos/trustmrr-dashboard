@@ -189,7 +189,8 @@ def build_heat(sections, census, today):
         if not cat:
             continue
         b = bucket(cat)
-        if it.get("multiple") is not None:
+        # ignore junk pricing (absurd asking vs revenue) so tiny samples can't distort the median
+        if it.get("multiple") is not None and 0 < it["multiple"] <= 50:
             b["multiples"].append(it["multiple"])
         listed = it.get("firstListedForSaleAt")
         if listed and it["slug"] not in seen_listing:
@@ -208,7 +209,8 @@ def build_heat(sections, census, today):
             "growing": b["growing"],
             "medianGrowth": round(median(b["growth"]), 1) if b["growth"] else None,
             "listings7d": b["listings7d"],
-            "medianMultiple": round(median(b["multiples"]), 2) if b["multiples"] else None,
+            "multipleSamples": len(b["multiples"]),
+            "medianMultiple": round(median(b["multiples"]), 2) if len(b["multiples"]) >= 3 else None,
         })
     # census join (census keys are slugs; section categories are display names)
     slugify = lambda c: re.sub(r"[^a-z0-9]+", "-", c.lower()).strip("-")
