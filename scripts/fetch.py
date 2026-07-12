@@ -69,6 +69,9 @@ FLAG_PATTERNS = {
     "habit": re.compile(r"habit|streak|routine", re.I),
 }
 
+# nameless/stealth entries carry no product signal for direction-finding
+ANON_RE = re.compile(r"anonymous|stealth|hidden business|unnamed|undisclosed", re.I)
+
 
 def get(params, key):
     qs = urllib.parse.urlencode(params)
@@ -95,8 +98,10 @@ def fetch_section(name, params, pages, key):
     for page in range(1, min(pages, max_pages) + 1):
         resp = get({**params, "page": page, "limit": 10}, key)
         batch = resp.get("data", [])
-        items.extend(batch)
-        print(f"{name}: page {page} -> {len(batch)} items", file=sys.stderr)
+        kept = [it for it in batch if not ANON_RE.search(it.get("name") or "")]
+        items.extend(kept)
+        dropped = len(batch) - len(kept)
+        print(f"{name}: page {page} -> {len(kept)} items" + (f" (dropped {dropped} anon)" if dropped else ""), file=sys.stderr)
         if not resp.get("meta", {}).get("hasMore"):
             break
         time.sleep(REQUEST_GAP_S)
