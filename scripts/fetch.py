@@ -39,14 +39,16 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 
 # ---- founder-lens tracking segments -------------------------------------
-# small-but-promising band: last-30d revenue $200..$15k, ranked by growth
+# small-but-promising band: last-30d revenue $200..$15k, ranked by growth.
+# For-sale only: every tracked item carries an asking price, so the market's
+# valuation of each direction is directly observable.
 SECTIONS_DAILY = {
-    "potential": ({"minRevenue": "200", "maxRevenue": "15000", "sort": "growth-desc"}, 5),
+    "potential": ({"onSale": "true", "minRevenue": "200", "maxRevenue": "15000", "sort": "growth-desc"}, 5),
     "recentListings": ({"onSale": "true", "sort": "listed-desc"}, 5),
     "smallDeals": ({"onSale": "true", "maxPrice": "50000", "sort": "best-deal"}, 3),
 }
 FOCUS_CATEGORIES = ["mobile-apps", "games", "health-fitness", "productivity", "utilities"]
-FOCUS_PARAMS = {"minRevenue": "100", "maxRevenue": "20000", "sort": "growth-desc"}
+FOCUS_PARAMS = {"onSale": "true", "minRevenue": "100", "maxRevenue": "20000", "sort": "growth-desc"}
 FOCUS_PAGES = 2
 
 ALL_CATEGORIES = [
@@ -285,7 +287,7 @@ def build_delta(today, merged, prev_by_slug, prev_date):
             })
         if prev is None:
             # entered the tracked pool today (new growing small product)
-            if rec.get("growth30d") and rec["growth30d"] > 0 and not rec.get("onSale"):
+            if rec.get("growth30d") and rec["growth30d"] > 0:
                 delta["newcomers"].append({
                     "slug": slug, "name": rec["name"], "mrr": rec.get("mrr"),
                     "rev30": rec.get("rev30"), "growth30d": round(rec["growth30d"], 1),

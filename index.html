@@ -109,7 +109,7 @@ footer a { color: var(--ink-2); }
   <div class="heat-wrap">
     <div class="heat-card">
       <h3>User lens · growing small products</h3>
-      <div class="desc">count of $200–$20k/mo products with top revenue growth, by category</div>
+      <div class="desc">count of growing $200–$20k/mo for-sale products, by category</div>
       <div id="heat-user"></div>
     </div>
     <div class="heat-card">
@@ -120,10 +120,10 @@ footer a { color: var(--ink-2); }
   </div>
   <div class="card" style="margin-top:12px"><table id="heat-table"></table></div>
 
-  <h2>Potential pool <span class="sub">$200–$15k monthly revenue, fastest growing, all categories</span></h2>
+  <h2>Potential pool <span class="sub">for sale · $200–$15k monthly revenue, fastest growing, all categories</span></h2>
   <div class="card"><table id="potential"></table></div>
 
-  <h2>Focus categories <span class="sub">mobile-apps · games · health-fitness · productivity · utilities</span></h2>
+  <h2>Focus categories <span class="sub">for sale · mobile-apps · games · health-fitness · productivity · utilities</span></h2>
   <div class="filters" id="focus-chips">
     <button class="chip on" data-flag="">all</button>
     <button class="chip" data-flag="ios">iOS</button>
@@ -246,14 +246,15 @@ function hbars(el, rows, valKey, fmt) {
     `<div class="v">${fmt(r[valKey])}</div></div>`).join("");
 }
 
-const growthCols = (withSale) => [
+const growthCols = () => [
   { key: "name", label: "Startup", val: (s) => s.name.toLowerCase(), cell: nameCell },
   { key: "g", label: "Rev 30d growth", num: true, val: (s) => s.growth30d, cell: (s) => fmtPct(s.growth30d) },
   { key: "rev", label: "Rev 30d", num: true, val: (s) => s.revenue?.last30Days, cell: (s) => fmtUsd(s.revenue?.last30Days) },
   { key: "mrr", label: "MRR", num: true, val: (s) => s.revenue?.mrr, cell: (s) => fmtUsd(s.revenue?.mrr) },
   { key: "gm", label: "MRR 30d", num: true, val: (s) => s.growthMRR30d, cell: (s) => fmtPct(s.growthMRR30d) },
+  { key: "price", label: "Asking", num: true, val: (s) => s.askingPrice, cell: (s) => fmtUsd(s.askingPrice) },
+  { key: "mult", label: "Multiple", num: true, val: (s) => s.multiple, cell: (s) => (s.multiple != null ? s.multiple.toFixed(1) + "×" : "–") },
   { key: "trend", label: "Trend", val: () => 0, cell: (s) => spark(s.slug) },
-  ...(withSale ? [{ key: "sale", label: "For sale", val: (s) => s.onSale, cell: (s) => (s.onSale ? `yes · ${fmtUsd(s.askingPrice)}` : "–") }] : []),
 ];
 
 async function boot() {
@@ -306,13 +307,13 @@ async function boot() {
     { key: "cs", label: "All on sale", num: true, val: (c) => c.censusOnSale, cell: (c) => c.censusOnSale ?? "–" },
   ], cats);
 
-  renderTable($("#potential"), growthCols(true), S.potential || []);
+  renderTable($("#potential"), growthCols(), S.potential || []);
 
   // focus with chips
   const focusRows = S.focus || [];
   const focusCats = [...new Set(focusRows.map((d) => d.category).filter(Boolean))].sort();
   $("#focus-cat").insertAdjacentHTML("beforeend", focusCats.map((c) => `<option>${esc(c)}</option>`).join(""));
-  const focusTable = renderTable($("#focus"), growthCols(true), focusRows);
+  const focusTable = renderTable($("#focus"), growthCols(), focusRows);
   let flagFilter = "";
   const applyFocus = () => {
     const cat = $("#focus-cat").value;
