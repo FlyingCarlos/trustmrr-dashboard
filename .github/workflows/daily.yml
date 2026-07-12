@@ -1,0 +1,40 @@
+name: daily-snapshot
+
+on:
+  schedule:
+    - cron: "30 8 * * *" # 16:30 Beijing, ~1.5h before the local daily briefing
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch snapshot
+        env:
+          TRUSTMRR_API_KEY: ${{ secrets.TRUSTMRR_API_KEY }}
+        run: python scripts/fetch.py
+
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "snapshot $(date -u +%F)"
+            git push
+          fi

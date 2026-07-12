@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>TrustMRR Tracker</title>
+<style>
+:root {
+  --page: #f9f9f7; --surface: #fcfcfb;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --baseline: #c3c2b7; --ring: rgba(11,11,11,0.10);
+  --series-1: #2a78d6;
+  --up: #006300; --down: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0d0d0d; --surface: #1a1a19;
+    --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --baseline: #383835; --ring: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --up: #0ca30c; --down: #d03b3b;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 15px; margin: 32px 0 10px; }
+header.top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.stamp { color: var(--muted); font-size: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 12px 14px; }
+.tile .label { color: var(--ink-2); font-size: 12px; }
+.tile .value { font-size: 22px; font-weight: 650; margin-top: 2px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 7px 12px; text-align: left; white-space: nowrap; }
+th {
+  font-size: 12px; color: var(--ink-2); font-weight: 600; cursor: pointer;
+  border-bottom: 1px solid var(--baseline); position: sticky; top: 0; background: var(--surface);
+}
+th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr { border-bottom: 1px solid var(--grid); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--series-1) 6%, transparent); }
+td a { color: var(--ink); text-decoration: none; font-weight: 550; }
+td a:hover { text-decoration: underline; }
+.cat { color: var(--ink-2); font-size: 12px; }
+.up { color: var(--up); } .down { color: var(--down); }
+.chg { font-variant-numeric: tabular-nums; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.filters input, .filters select {
+  background: var(--surface); color: var(--ink); border: 1px solid var(--baseline);
+  border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px;
+}
+.events { display: grid; gap: 6px; }
+.event { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.event .kind { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--ink-2); margin-right: 8px; }
+.empty { color: var(--muted); font-size: 13px; padding: 12px; }
+svg.spark { display: block; }
+.spark polyline { fill: none; stroke: var(--series-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.spark circle { fill: var(--series-1); }
+#tooltip {
+  position: fixed; pointer-events: none; display: none; z-index: 10;
+  background: var(--surface); border: 1px solid var(--baseline); border-radius: 6px;
+  padding: 4px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  font-variant-numeric: tabular-nums;
+}
+footer { margin-top: 40px; color: var(--muted); font-size: 12px; }
+footer a { color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>TrustMRR Tracker</h1>
+    <span class="stamp" id="stamp">loading…</span>
+  </header>
+  <div class="tiles" id="tiles"></div>
+
+  <h2>Today's changes</h2>
+  <div class="events" id="events"></div>
+
+  <h2>MRR leaderboard · top 100 by 30-day revenue</h2>
+  <div class="card"><table id="leaderboard"></table></div>
+
+  <h2>Growth movers · 30-day revenue growth (rev ≥ $1k)</h2>
+  <div class="card"><table id="growth"></table></div>
+
+  <h2>For sale</h2>
+  <div class="filters">
+    <input id="f-search" type="search" placeholder="search name…">
+    <select id="f-cat"><option value="">all categories</option></select>
+    <input id="f-minmrr" type="number" placeholder="min MRR $" min="0" step="100">
+    <input id="f-maxmult" type="number" placeholder="max multiple" min="0" step="0.5">
+  </div>
+  <div class="card"><table id="deals"></table></div>
+
+  <footer>
+    Data: <a href="https://trustmrr.com" rel="noopener">TrustMRR</a> API · refreshed daily by GitHub Actions ·
+    <a href="data/snapshots.jsonl">raw history</a> · <a href="data/delta.json">delta</a>
+  </footer>
+</main>
+<div id="tooltip"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const fmtUsd = (v) => {
+  if (v == null) return "–";
+  const abs = Math.abs(v);
+  if (abs >= 1e6) return "$" + (v / 1e6).toFixed(abs >= 1e7 ? 0 : 1) + "M";
+  if (abs >= 1e3) return "$" + (v / 1e3).toFixed(abs >= 1e5 ? 0 : 1) + "k";
+  return "$" + Math.round(v);
+};
+const fmtPct = (v) => {
+  if (v == null) return "–";
+  const cls = v > 0 ? "up" : v < 0 ? "down" : "";
+  const arrow = v > 0 ? "▲" : v < 0 ? "▼" : "·";
+  return `<span class="chg ${cls}">${arrow} ${Math.abs(v).toFixed(1)}%</span>`;
+};
+const link = (s) => `<a href="https://trustmrr.com/startup/${s.slug}" rel="noopener">${esc(s.name)}</a>`;
+const esc = (t) => (t ?? "").toString().replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// --- sparklines ---------------------------------------------------------
+let SERIES = {};
+const tooltip = $("#tooltip");
+function spark(slug, w = 110, h = 26) {
+  const pts = (SERIES[slug]?.points || []).filter((p) => p[1] != null);
+  if (pts.length < 2) return `<span class="cat">–</span>`;
+  const ys = pts.map((p) => p[1]);
+  const min = Math.min(...ys), max = Math.max(...ys), span = max - min || 1;
+  const step = (w - 6) / (pts.length - 1);
+  const xy = pts.map((p, i) => [3 + i * step, h - 4 - ((p[1] - min) / span) * (h - 8)]);
+  const line = xy.map((p) => p.map((n) => n.toFixed(1)).join(",")).join(" ");
+  const last = xy[xy.length - 1];
+  return `<svg class="spark" width="${w}" height="${h}" data-slug="${esc(slug)}" role="img" aria-label="MRR trend">` +
+    `<polyline points="${line}"></polyline>` +
+    `<circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3"></circle></svg>`;
+}
+document.addEventListener("mousemove", (e) => {
+  const svg = e.target.closest("svg.spark");
+  if (!svg) { tooltip.style.display = "none"; return; }
+  const pts = (SERIES[svg.dataset.slug]?.points || []).filter((p) => p[1] != null);
+  if (!pts.length) return;
+  const rect = svg.getBoundingClientRect();
+  const i = Math.max(0, Math.min(pts.length - 1, Math.round(((e.clientX - rect.left - 3) / (rect.width - 6)) * (pts.length - 1))));
+  tooltip.textContent = `${pts[i][0]} · MRR ${fmtUsd(pts[i][1])}`;
+  tooltip.style.display = "block";
+  tooltip.style.left = Math.min(e.clientX + 12, innerWidth - 170) + "px";
+  tooltip.style.top = (e.clientY + 14) + "px";
+});
+
+// --- sortable tables ----------------------------------------------------
+function renderTable(el, cols, rows) {
+  const state = { key: null, dir: -1 };
+  const draw = () => {
+    let data = [...rows];
+    if (state.key) {
+      const col = cols.find((c) => c.key === state.key);
+      data.sort((a, b) => {
+        const va = col.val(a), vb = col.val(b);
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        return (va < vb ? -1 : va > vb ? 1 : 0) * state.dir;
+      });
+    }
+    el.innerHTML =
+      `<thead><tr>${cols.map((c) =>
+        `<th class="${c.num ? "num" : ""}" data-key="${c.key}">${c.label}${state.key === c.key ? (state.dir < 0 ? " ↓" : " ↑") : ""}</th>`).join("")}</tr></thead>` +
+      `<tbody>${data.map((r) => `<tr>${cols.map((c) => `<td class="${c.num ? "num" : ""}">${c.cell(r)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    el.querySelectorAll("th").forEach((th) =>
+      th.addEventListener("click", () => {
+        const k = th.dataset.key;
+        state.dir = state.key === k ? -state.dir : -1;
+        state.key = k;
+        draw();
+      }));
+  };
+  draw();
+  return { redraw: (newRows) => { rows = newRows; draw(); } };
+}
+
+// --- boot ---------------------------------------------------------------
+async function boot() {
+  const [latest, series, delta] = await Promise.all([
+    fetch("data/latest.json").then((r) => r.json()),
+    fetch("data/series-90d.json").then((r) => r.json()).catch(() => ({})),
+    fetch("data/delta.json").then((r) => r.json()).catch(() => null),
+  ]);
+  SERIES = series;
+  const S = latest.sections;
+  $("#stamp").textContent = `updated ${new Date(latest.generatedAt).toLocaleString()} · data by TrustMRR`;
+
+  const deals = S.deals || [];
+  const merged = new Map();
+  Object.values(S).flat().forEach((s) => merged.set(s.slug, s));
+  const multiples = deals.map((d) => d.multiple).filter((m) => m != null).sort((a, b) => a - b);
+  $("#tiles").innerHTML = [
+    ["Tracked startups", merged.size],
+    ["For sale (tracked)", deals.length],
+    ["Top MRR", fmtUsd(Math.max(...[...merged.values()].map((s) => s.revenue?.mrr || 0)))],
+    ["Median deal multiple", multiples.length ? multiples[Math.floor(multiples.length / 2)].toFixed(1) + "×" : "–"],
+  ].map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value">${v}</div></div>`).join("");
+
+  // events
+  const ev = [];
+  if (delta && delta.prevDate) {
+    delta.milestones?.forEach((m) => ev.push(["MILESTONE", `${esc(m.name)} MRR crossed ${fmtUsd(m.crossed)} ${m.direction === "up" ? "▲" : "▼"}`]));
+    delta.newListings?.forEach((n) => ev.push(["NEW LISTING", `${esc(n.name)} — MRR ${fmtUsd(n.mrr)}, asking ${fmtUsd(n.price)}${n.multiple ? ` (${n.multiple.toFixed(1)}×)` : ""}`]));
+    delta.priceChanges?.forEach((p) => ev.push(["PRICE", `${esc(p.name)} ${fmtUsd(p.from)} → ${fmtUsd(p.to)} (${p.pct > 0 ? "+" : ""}${p.pct}%)`]));
+    delta.rankMoves?.forEach((r) => ev.push(["RANK", `${esc(r.name)} #${r.from} → #${r.to}`]));
+    delta.mrrMoves?.forEach((m) => ev.push(["MRR", `${esc(m.name)} ${fmtUsd(m.from)} → ${fmtUsd(m.to)} (${m.pct > 0 ? "+" : ""}${m.pct}%)`]));
+    delta.delisted?.forEach((d) => ev.push(["DELISTED", `${esc(d.name)} (last asking ${fmtUsd(d.lastPrice)})`]));
+  }
+  $("#events").innerHTML = ev.length
+    ? ev.map(([k, t]) => `<div class="event"><span class="kind">${k}</span>${t}</div>`).join("")
+    : `<div class="empty">${delta?.prevDate ? "No notable changes vs " + delta.prevDate : "First snapshot — changes appear from the second day."}</div>`;
+
+  // leaderboard
+  renderTable($("#leaderboard"), [
+    { key: "rank", label: "#", num: true, val: (s) => s.rank, cell: (s) => s.rank ?? "–" },
+    { key: "name", label: "Startup", val: (s) => s.name.toLowerCase(), cell: (s) => `${link(s)} <span class="cat">${esc(s.category || "")}</span>` },
+    { key: "mrr", label: "MRR", num: true, val: (s) => s.revenue?.mrr, cell: (s) => fmtUsd(s.revenue?.mrr) },
+    { key: "gm", label: "MRR 30d", num: true, val: (s) => s.growthMRR30d, cell: (s) => fmtPct(s.growthMRR30d) },
+    { key: "rev", label: "Rev 30d", num: true, val: (s) => s.revenue?.last30Days, cell: (s) => fmtUsd(s.revenue?.last30Days) },
+    { key: "trend", label: "Trend", val: () => 0, cell: (s) => spark(s.slug) },
+  ], S.leaderboard || []);
+
+  // growth movers
+  renderTable($("#growth"), [
+    { key: "name", label: "Startup", val: (s) => s.name.toLowerCase(), cell: (s) => `${link(s)} <span class="cat">${esc(s.category || "")}</span>` },
+    { key: "g", label: "Rev 30d growth", num: true, val: (s) => s.growth30d, cell: (s) => fmtPct(s.growth30d) },
+    { key: "rev", label: "Rev 30d", num: true, val: (s) => s.revenue?.last30Days, cell: (s) => fmtUsd(s.revenue?.last30Days) },
+    { key: "mrr", label: "MRR", num: true, val: (s) => s.revenue?.mrr, cell: (s) => fmtUsd(s.revenue?.mrr) },
+    { key: "sale", label: "For sale", val: (s) => s.onSale, cell: (s) => (s.onSale ? `yes · ${fmtUsd(s.askingPrice)}` : "–") },
+  ], S.growth || []);
+
+  // deals with filters
+  const dedupDeals = [...new Map([...(S.deals || []), ...(S.highMrrDeals || [])].map((d) => [d.slug, d])).values()];
+  const cats = [...new Set(dedupDeals.map((d) => d.category).filter(Boolean))].sort();
+  $("#f-cat").insertAdjacentHTML("beforeend", cats.map((c) => `<option>${esc(c)}</option>`).join(""));
+  const dealCols = [
+    { key: "name", label: "Startup", val: (s) => s.name.toLowerCase(), cell: (s) => `${link(s)} <span class="cat">${esc(s.category || "")}</span>` },
+    { key: "mrr", label: "MRR", num: true, val: (s) => s.revenue?.mrr, cell: (s) => fmtUsd(s.revenue?.mrr) },
+    { key: "rev", label: "Rev 30d", num: true, val: (s) => s.revenue?.last30Days, cell: (s) => fmtUsd(s.revenue?.last30Days) },
+    { key: "price", label: "Asking", num: true, val: (s) => s.askingPrice, cell: (s) => fmtUsd(s.askingPrice) },
+    { key: "mult", label: "Multiple", num: true, val: (s) => s.multiple, cell: (s) => (s.multiple != null ? s.multiple.toFixed(1) + "×" : "–") },
+    { key: "g", label: "Growth 30d", num: true, val: (s) => s.growth30d, cell: (s) => fmtPct(s.growth30d) },
+    { key: "listed", label: "Listed", val: (s) => s.firstListedForSaleAt, cell: (s) => (s.firstListedForSaleAt || "").slice(0, 10) || "–" },
+  ];
+  const table = renderTable($("#deals"), dealCols, dedupDeals);
+  const applyFilters = () => {
+    const q = $("#f-search").value.trim().toLowerCase();
+    const cat = $("#f-cat").value;
+    const minMrr = parseFloat($("#f-minmrr").value) || 0;
+    const maxMult = parseFloat($("#f-maxmult").value) || Infinity;
+    table.redraw(dedupDeals.filter((d) =>
+      (!q || d.name.toLowerCase().includes(q)) &&
+      (!cat || d.category === cat) &&
+      ((d.revenue?.mrr || 0) >= minMrr) &&
+      ((d.multiple ?? 0) <= maxMult)));
+  };
+  ["f-search", "f-cat", "f-minmrr", "f-maxmult"].forEach((id) => $("#" + id).addEventListener("input", applyFilters));
+}
+boot().catch((e) => { $("#stamp").textContent = "failed to load data: " + e.message; });
+</script>
+</body>
+</html>
