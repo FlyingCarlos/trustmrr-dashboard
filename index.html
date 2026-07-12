@@ -68,6 +68,7 @@ td a:hover { text-decoration: underline; }
   border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer;
 }
 .chip.on { color: var(--ink); border-color: var(--series-1); box-shadow: inset 0 0 0 1px var(--series-1); }
+.filters .dim { color: var(--muted); font-size: 12px; }
 .events { display: grid; gap: 6px; }
 .event { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
 .event .kind { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--ink-2); margin-right: 8px; }
@@ -125,11 +126,13 @@ footer a { color: var(--ink-2); }
 
   <h2>Focus categories <span class="sub">for sale · mobile-apps · games · health-fitness · productivity · utilities</span></h2>
   <div class="filters" id="focus-chips">
+    <span class="dim" title="keyword-detected product form (cross-category): App Store link, extension keywords, habit/streak keywords">Form</span>
     <button class="chip on" data-flag="">all</button>
     <button class="chip" data-flag="ios">iOS</button>
     <button class="chip" data-flag="chrome">Chrome ext</button>
     <button class="chip" data-flag="habit">Habit</button>
-    <select id="focus-cat"><option value="">all 5 categories</option></select>
+    <span class="dim" style="margin-left:12px" title="TrustMRR's own category label">Category</span>
+    <select id="focus-cat"><option value="">all</option></select>
   </div>
   <div class="card"><table id="focus"></table></div>
 
